@@ -1,0 +1,89 @@
+body {
+  margin: 0;
+  background: linear-gradient(135deg, #7b2ff7, #f107a3, #06bdf5);
+  background-size: 400% 400%;
+  animation: gradientMove 10s ease infinite;
+  font-family: 'Poppins', sans-serif;
+  color: #fff;
+}
+
+@keyframes gradientMove {
+  0% { background-position: 0 0; }
+  50% { background-position: 100% 100%; }
+  100% { background-position: 0 0; }
+}
+
+.main-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 40px;
+}
+
+.card-box {
+  width: 100%;
+  max-width: 650px;
+  padding: 30px;
+  border-radius: 20px;
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+  text-align: center;
+}
+
+.title {
+  font-size: 2.5em;
+  font-weight: 700;
+}
+
+.subtext {
+  font-size: 1.1em;
+  margin-bottom: 25px;
+}
+
+.upload-box {
+  border: 3px dashed #fff;
+  border-radius: 20px;
+  padding: 40px;
+  cursor: pointer;
+  transition: 0.3s;
+  background: rgba(255,255,255,0.12);
+}
+
+.upload-box.dragover {
+  background: rgba(255,255,255,0.25);
+  transform: scale(1.02);
+}
+
+.file-count {
+  margin: 15px 0;
+  font-size: 1.1em;
+}
+
+.color-picker {
+  max-width: 150px;
+  margin: 10px auto;
+}
+
+.process-btn {
+  background: #ffffff;
+  color: #000;
+  border-radius: 25px;
+  padding: 12px 25px;
+  font-size: 1.3em;
+  font-weight: bold;
+  transition: 0.3s;
+}
+
+.process-btn:hover {
+  transform: scale(1.05);
+}
+
+.status-text {
+  margin-top: 15px;
+  font-size: 1.2em;
+}
+
+.progress {
+  height: 28px;
+  border-radius: 10px;
+}
