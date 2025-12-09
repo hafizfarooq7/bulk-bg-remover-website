@@ -1,4 +1,5 @@
 Flask
+onnxruntime
 gunicorn
 rembg
 pillow
