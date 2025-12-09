@@ -20,14 +20,12 @@ session = new_session("isnet-general-use")
 
 progress_tracker = {}
 
-
+# ------------------------ IMAGE PROCESSING FUNCTIONS ------------------------
 def enhance_edges(image):
     image = image.filter(ImageFilter.SMOOTH)
     image = image.filter(ImageFilter.GaussianBlur(radius=1))
     return image
 
-
-# ------------------------ BACKGROUND PROCESSING ------------------------
 def background_worker(job_id, file_paths, bg_color=None, bg_photo_path=None):
     try:
         temp_out = os.path.join(OUTPUT_FOLDER, job_id)
@@ -45,7 +43,6 @@ def background_worker(job_id, file_paths, bg_color=None, bg_photo_path=None):
                 print("Error loading background photo:", e)
 
         for index, input_path in enumerate(file_paths):
-
             try:
                 img = Image.open(input_path).convert("RGBA")
                 output = remove(img, session=session)
@@ -55,14 +52,12 @@ def background_worker(job_id, file_paths, bg_color=None, bg_photo_path=None):
                     background = Image.new("RGBA", output.size, bg_color)
                     output = Image.alpha_composite(background, output)
                 elif background_photo:
-                    # Resize background photo to match image size
                     bg_resized = background_photo.resize(output.size)
                     output = Image.alpha_composite(bg_resized, output)
 
                 out_filename = "processed_" + os.path.basename(input_path)
                 out_path = os.path.join(temp_out, out_filename)
                 output.save(out_path, format="PNG")
-
                 processed_output_files.append(out_path)
 
             except Exception as e:
@@ -77,7 +72,7 @@ def background_worker(job_id, file_paths, bg_color=None, bg_photo_path=None):
             for f in processed_output_files:
                 zipf.write(f, os.path.basename(f))
 
-        # cleanup
+        # Cleanup
         for f in file_paths:
             try:
                 os.remove(f)
@@ -98,7 +93,6 @@ def background_worker(job_id, file_paths, bg_color=None, bg_photo_path=None):
         print("Background job error:", e)
         progress_tracker[job_id] = -1
 
-
 # ------------------------ START PROCESS ------------------------
 @app.route("/process", methods=["POST"])
 def start_processing():
@@ -108,6 +102,21 @@ def start_processing():
 
     if not uploaded:
         return jsonify({"error": "No files"}), 400
+
+    # Allowed extensions and max size
+    allowed_ext = {"jpg", "png", "jpeg", "webp", "heif", "heic"}
+    max_size = 10 * 1024 * 1024  # 10 MB
+
+    # Validate uploaded images
+    for file in uploaded:
+        ext = file.filename.rsplit('.', 1)[-1].lower()
+        if ext not in allowed_ext:
+            return jsonify({"error": f"File '{file.filename}' has invalid format. Please upload jpg, png, jpeg, webp, heif, or heic."}), 400
+        file.seek(0, os.SEEK_END)
+        size = file.tell()
+        file.seek(0)
+        if size > max_size:
+            return jsonify({"error": f"File '{file.filename}' is too large ({size // (1024*1024)} MB). Max allowed size is 10 MB."}), 400
 
     job_id = str(uuid.uuid4())
     progress_tracker[job_id] = 0
@@ -123,14 +132,23 @@ def start_processing():
         file.save(save_path)
         saved_paths.append(save_path)
 
-    # Save background photo if provided
+    # Validate and save background photo
     bg_photo_path = None
     if bg_photo:
+        ext = bg_photo.filename.rsplit('.', 1)[-1].lower()
+        if ext not in allowed_ext:
+            return jsonify({"error": f"Background photo '{bg_photo.filename}' has invalid format. Please upload jpg, png, jpeg, webp, heif, or heic."}), 400
+        bg_photo.seek(0, os.SEEK_END)
+        size = bg_photo.tell()
+        bg_photo.seek(0)
+        if size > max_size:
+            return jsonify({"error": f"Background photo '{bg_photo.filename}' is too large ({size // (1024*1024)} MB). Max allowed size is 10 MB."}), 400
+
         bg_photo_filename = secure_filename(bg_photo.filename)
         bg_photo_path = os.path.join(job_upload_dir, bg_photo_filename)
         bg_photo.save(bg_photo_path)
 
-    # Background thread
+    # Start background thread
     t = threading.Thread(
         target=background_worker,
         args=(job_id, saved_paths, bg_color, bg_photo_path),
@@ -140,11 +158,9 @@ def start_processing():
 
     return jsonify({"job_id": job_id})
 
-
 @app.route("/progress/<job_id>")
 def check_progress(job_id):
     return jsonify({"progress": progress_tracker.get(job_id, 0)})
-
 
 @app.route("/download/<job_id>")
 def download(job_id):
@@ -153,16 +169,10 @@ def download(job_id):
         return send_file(zip_path, as_attachment=True)
     return "Not ready", 404
 
-
 @app.route("/")
 def index():
     return render_template("index.html")
 
-
-import os
-
 if __name__ == "__main__":
-    # Use the PORT Render provides; default to 5000 for local testing
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
