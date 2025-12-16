@@ -1,3 +1,4 @@
+/* --- Body & Background --- */
 body {
   margin: 0;
   background: linear-gradient(135deg, #7b2ff7, #f107a3, #06bdf5);
@@ -13,6 +14,7 @@ body {
   100% { background-position: 0 0; }
 }
 
+/* --- Main Wrapper & Card --- */
 .main-wrapper {
   display: flex;
   justify-content: center;
@@ -30,6 +32,7 @@ body {
   text-align: center;
 }
 
+/* --- Titles & Text --- */
 .title {
   font-size: 2.5em;
   font-weight: 700;
@@ -40,6 +43,17 @@ body {
   margin-bottom: 25px;
 }
 
+.file-count {
+  margin: 15px 0;
+  font-size: 1.1em;
+}
+
+.status-text {
+  margin-top: 15px;
+  font-size: 1.2em;
+}
+
+/* --- Upload Box --- */
 .upload-box {
   border: 3px dashed #fff;
   border-radius: 20px;
@@ -54,16 +68,13 @@ body {
   transform: scale(1.02);
 }
 
-.file-count {
-  margin: 15px 0;
-  font-size: 1.1em;
-}
-
+/* --- Color Picker --- */
 .color-picker {
   max-width: 150px;
   margin: 10px auto;
 }
 
+/* --- Buttons --- */
 .process-btn {
   background: #ffffff;
   color: #000;
@@ -78,12 +89,89 @@ body {
   transform: scale(1.05);
 }
 
-.status-text {
-  margin-top: 15px;
-  font-size: 1.2em;
-}
-
+/* --- Progress Bar --- */
 .progress {
   height: 28px;
   border-radius: 10px;
+}
+
+/* --- Preview Area --- */
+#downloadArea {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+/* --- Preview Boxes --- */
+.preview-box {
+  display: inline-block;
+  margin: 5px;
+  border-radius: 10px;
+  overflow: hidden;
+  width: 180px;       /* fixed width */
+  height: 180px;      /* fixed height */
+  background: rgba(255,255,255,0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-box canvas {
+  transition: transform 0.3s, opacity 0.5s;
+}
+
+.preview-box canvas:hover {
+  transform: scale(1.05);
+}
+
+/* --- Processed Image Fade-In Animation --- */
+.processed-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.processed-image.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* --- Shimmer Loading Placeholder --- */
+.processed-placeholder {
+  width: 200px;
+  height: 150px;
+  margin: 5px;
+  display: inline-block;
+  border-radius: 10px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.25) 50%, rgba(255,255,255,0.1) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* --- Download Area Links (ZIP Button) --- */
+#downloadArea a {
+  text-decoration: none;
+  font-weight: bold;
+  display: block;
+  margin: 15px auto;
+  padding: 10px 20px;
+  border-radius: 25px;
+  background: #FFD700;
+  color: #000;
+  font-weight: bold;
+  text-align: center;
+  transition: transform 0.3s;
+}
+
+#downloadArea a:hover {
+  transform: scale(1.1);
 }

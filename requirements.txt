@@ -1,6 +1,0 @@
-Flask
-onnxruntime
-gunicorn
-rembg
-pillow
-numpy
