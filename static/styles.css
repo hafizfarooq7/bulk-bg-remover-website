@@ -33,10 +33,6 @@ body {
 }
 
 /* --- Titles & Text --- */
-.title {
-  font-size: 2.5em;
-  font-weight: 700;
-}
 
 .subtext {
   font-size: 1.1em;
@@ -105,17 +101,25 @@ body {
 
 /* --- Preview Boxes --- */
 .preview-box {
-  display: inline-block;
-  margin: 5px;
-  border-radius: 10px;
-  overflow: hidden;
-  width: 180px;       /* fixed width */
-  height: 180px;      /* fixed height */
-  background: rgba(255,255,255,0.05);
   display: flex;
   align-items: center;
   justify-content: center;
+  margin: 5px;
+  border-radius: 10px;
+  overflow: hidden;
+  width: 180px;
+  height: 180px;
+  background: rgba(0,0,0,0.05);
+  border: 2px solid #FFD700;
+  box-sizing: border-box;
+  padding: 4px; /* new: ensures canvas doesn't touch the border */
 }
+
+.preview-box:hover {
+  box-shadow: 0 0 10px #FFD700;
+}
+
+
 
 .preview-box canvas {
   transition: transform 0.3s, opacity 0.5s;

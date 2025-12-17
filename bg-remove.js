@@ -1,3 +1,7 @@
+const MAX_FILES = 50;
+const MAX_FILE_SIZE_MB = 10;
+const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'heic', 'heif'];
+
 // bg-remove.js
 const worker = new Worker("bg-worker.js");
 // <-- ADD THIS HERE
@@ -158,31 +162,66 @@ function displayPreview(canvas) {
     const box = document.createElement('div');
     box.className = 'preview-box';
 
+    // scale canvas to fit nicely inside box
     const scale = Math.min(140 / canvas.width, 140 / canvas.height, 1);
     const previewCanvas = document.createElement('canvas');
     previewCanvas.width = canvas.width * scale;
     previewCanvas.height = canvas.height * scale;
+
     const ctx = previewCanvas.getContext('2d');
     ctx.drawImage(canvas, 0, 0, previewCanvas.width, previewCanvas.height);
+
+    // add golden border to the canvas itself
+    previewCanvas.style.border = "2px solid #FFD700";
+    previewCanvas.style.borderRadius = "8px"; // optional rounded corners
 
     box.appendChild(previewCanvas);
     previewArea.appendChild(box);
 }
 
+
+
 // --- ZIP download ---
 function createZipDownloadButton(files) {
+
+    // ✅ CASE 1: Only ONE image → direct download (NO ZIP)
+    if (files.length === 1) {
+        const f = files[0];
+
+        f.canvas.toBlob((blob) => {
+            const url = URL.createObjectURL(blob);
+            const link = document.getElementById('zipDownloadBtn');
+
+            link.href = url;
+
+            // keep original filename, just add suffix
+            link.download = f.name.replace(/\.[^/.]+$/, "") + "_bg_removed.png";
+
+            link.style.display = 'block';
+        });
+
+        return; // ⛔ stop here, no ZIP
+    }
+
+    // ✅ CASE 2: Multiple images → ZIP (your original logic)
     const zip = new JSZip();
+
     files.forEach(f => {
-        zip.file(f.name.replace(/\.[^/.]+$/, "") + "_bg_removed.png", f.canvas.toDataURL().split(",")[1], {base64:true});
+        zip.file(
+            f.name.replace(/\.[^/.]+$/, "") + "_bg_removed.png",
+            f.canvas.toDataURL().split(",")[1],
+            { base64: true }
+        );
     });
 
-    zip.generateAsync({type:"blob"}).then(content => {
+    zip.generateAsync({ type: "blob" }).then(content => {
         const link = document.getElementById('zipDownloadBtn');
         link.href = URL.createObjectURL(content);
         link.download = "bg_removed_images.zip";
         link.style.display = 'block';
     });
 }
+
 
 // --- Sequential processing with fake-progress ---
 async function removeBackgroundSequentially(files) {
@@ -238,16 +277,43 @@ async function removeBackgroundSequentially(files) {
 
     createZipDownloadButton(processedFiles);
 }
+// ===== Background checkbox + buttons logic =====
 const enableColorCheckbox = document.getElementById('enableColor');
+const bgModeButtons = document.getElementById('bgModeButtons');
+const btnBackground = document.getElementById('btnBackground');
+const btnColor = document.getElementById('btnColor');
 const bgColorInput = document.getElementById('bgColor');
+const bgPhotoInput = document.getElementById('bgPhoto');
+
+// Initially hide buttons and inputs
+bgModeButtons.style.display = 'none';
+bgColorInput.style.display = 'none';
+bgPhotoInput.style.display = 'none';
 
 enableColorCheckbox.addEventListener('change', () => {
     if (enableColorCheckbox.checked) {
-        bgColorInput.style.display = 'block';
+        bgModeButtons.style.display = 'flex'; // show buttons
     } else {
+        bgModeButtons.style.display = 'none'; // hide buttons
         bgColorInput.style.display = 'none';
+        bgPhotoInput.style.display = 'none';
+        bgPhotoInput.value = ''; // reset
     }
 });
+
+// When Color button is clicked, open color picker
+btnColor.addEventListener('click', () => {
+    bgColorInput.style.display = 'block';
+    bgColorInput.click();
+});
+
+// When Background button is clicked, open file selector
+btnBackground.addEventListener('click', () => {
+    bgPhotoInput.style.display = 'block';
+    bgPhotoInput.click();
+});
+
+
 // ===== Drag & Drop Handling =====
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
@@ -286,21 +352,67 @@ dropZone.addEventListener('drop', (e) => {
 });
 
 // Update the drop zone text to show selected filenames
+const fileCount = document.getElementById('fileCount');
+
 function updateDropZoneText() {
     if (selectedFiles.length > 0) {
+        // Update drop zone preview
         dropZone.querySelector('p').textContent = selectedFiles.map(f => f.name).join(', ');
+        // Update file count
+        fileCount.textContent = `${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''} selected`;
     } else {
         dropZone.querySelector('p').textContent = '📁 Drag & Drop images here\nor click to browse';
+        fileCount.textContent = 'No files selected';
     }
 }
 
-// --- Process button ---
+
 document.getElementById('processBtn').onclick = async () => {
     if (!selectedFiles.length) {
         alert("Please select files!");
         return;
     }
 
+    // ✅ CHECK 1: max files
+    if (selectedFiles.length > MAX_FILES) {
+        alert(
+            `❌ Too many images selected\n\n` +
+            `Selected: ${selectedFiles.length}\n` +
+            `Maximum allowed: ${MAX_FILES}`
+        );
+        return;
+    }
+
+    // ✅ CHECK 2 & 3: size + extension
+    for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+
+        // size check
+        const sizeMB = file.size / (1024 * 1024);
+        if (sizeMB > MAX_FILE_SIZE_MB) {
+            alert(
+                `❌ Image too large\n\n` +
+                `File: ${file.name}\n` +
+                `Size: ${sizeMB.toFixed(2)} MB\n` +
+                `Max allowed: ${MAX_FILE_SIZE_MB} MB`
+            );
+            return;
+        }
+
+        // extension check (SAFE)
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!ALLOWED_EXTENSIONS.includes(ext)) {
+            alert(
+                `❌ Unsupported file format\n\n` +
+                `File: ${file.name}\n\n` +
+                `Allowed formats:\nJPG, JPEG, PNG, HEIC, HEIF`
+            );
+            return;
+        }
+    }
+
+    // 🚀 ORIGINAL FLOW — UNTOUCHED
     document.getElementById('previewArea').innerHTML = '';
     await removeBackgroundSequentially(selectedFiles);
 };
+
