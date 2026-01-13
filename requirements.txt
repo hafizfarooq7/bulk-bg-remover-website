@@ -1,0 +1,6 @@
+Flask==2.3.3
+torch==2.2.0
+torchvision==0.17.1
+onnxruntime==1.15.1
+numpy==1.25.2
+Pillow==10.1.0
