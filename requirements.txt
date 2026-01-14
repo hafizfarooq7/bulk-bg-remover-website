@@ -1,6 +1,5 @@
 Flask==2.3.3
 torch==2.5.1
-torchvision==0.20.1
 numpy
 Pillow
 onnxruntime
