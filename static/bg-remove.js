@@ -1,3 +1,8 @@
+const COMMON_COLORS = [
+  "#ffffff", "#000000", "#f5f5f5", "#ff0000",
+  "#00ff6a", "#00cfff", "#6a00ff", "#ff00c3"
+];
+
 // ====================
 // bg-remove.js - FINAL (Preserve all original logic)
 // ====================
@@ -217,7 +222,14 @@ dropZone.appendChild(box);
             };
             box.appendChild(downloadIcon);
 
-            processedFiles.push({ name: file.name, canvas: canvas });
+            processedFiles.push({
+  name: file.name,
+  canvas: canvas,
+  ctx: ctx,
+  img: img   // ⬅️ IMPORTANT
+});
+// ✅ WHEN ALL IMAGES ARE PROCESSED
+
             resolve();
           };
         });
@@ -228,7 +240,9 @@ dropZone.appendChild(box);
       }
     }
 
-    statusMessage.textContent = 'All images processed!';
+    statusMessage.textContent = 'Processing complete';
+showBackgroundColorPanel(processedFiles);
+
 
     // --- ZIP Download ---
     createZipDownloadButton(processedFiles);
@@ -250,32 +264,146 @@ dropZone.appendChild(box);
 
   // ===== ZIP Download =====
   function createZipDownloadButton(files) {
-    if (files.length === 1) {
-      const f = files[0];
-      f.canvas.toBlob(blob => {
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = f.name.replace(/\.[^/.]+$/, '') + "_bg_removed.png";
-        link.click();
-      });
-      return;
-    }
+  // DO NOTHING AUTOMATICALLY
+  // Download will be triggered manually by "Download All" button
+}
+function downloadAll(files) {
+  if (!files || files.length === 0) return;
 
-    const zip = new JSZip();
-    files.forEach(f => {
-      zip.file(f.name.replace(/\.[^/.]+$/, '') + "_bg_removed.png",
-        f.canvas.toDataURL().split(',')[1], { base64: true });
-    });
-    zip.generateAsync({ type: 'blob' }).then(content => {
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(content);
-      link.download = "bg_removed_images.zip";
-      link.click();
-    });
-  }
+  const zip = new JSZip();
+
+  files.forEach(f => {
+    const dataURL = f.canvas.toDataURL("image/png");
+    zip.file(
+      f.name.replace(/\.[^/.]+$/, '') + "_bg_removed.png",
+      dataURL.split(',')[1],
+      { base64: true }
+    );
+  });
+
+  zip.generateAsync({ type: "blob" }).then(content => {
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(content);
+    link.download = "bg_removed_images.zip";
+
+    // ✅ Actually trigger the download
+    link.click();
+
+    // ✅ Clean up memory
+    URL.revokeObjectURL(link.href);
+  });
+}
+
 
   // ===== Edge / Alpha / Mask Refinement =====
   // --- THIS REMAINS COMPLETELY UNTOUCHED ---
   // (All your original functions like upscaleMask, buildEdgeAlpha, refineAlpha, suppressWeakForeground,
   // applyMaskWithBackground, displayPreview, etc. remain exactly as they were)
 });
+function showBackgroundColorPanel(processedFiles) {
+  const panel = document.getElementById("bgColorPanel");
+  const row = document.getElementById("colorRow");
+  const downloadAllBtn = document.getElementById("downloadAllBtn");
+
+  if (!panel || !row || !downloadAllBtn) {
+    console.error("Missing color panel or download button in HTML!");
+    return;
+  }
+
+  row.innerHTML = "";
+  panel.style.display = "block";
+
+  // --- Preset colors ---
+  COMMON_COLORS.forEach(color => {
+    const c = document.createElement("div");
+    c.className = "color-circle";
+    c.style.background = color;
+    c.style.width = "30px";
+    c.style.height = "30px";
+    c.style.borderRadius = "50%";
+    c.style.margin = "5px";
+    c.style.cursor = "pointer";
+    c.onclick = () => {
+      processedFiles.forEach(file => applyBackgroundColor(file, color));
+    };
+    row.appendChild(c);
+  });
+
+// --- Custom color "rainbow" picker ---
+const pickerWrapper = document.createElement("div");
+pickerWrapper.style.width = "30px";
+pickerWrapper.style.height = "30px";
+pickerWrapper.style.borderRadius = "50%";
+pickerWrapper.style.border = "2px solid #999"; // optional border
+pickerWrapper.style.display = "flex";
+pickerWrapper.style.alignItems = "center";
+pickerWrapper.style.justifyContent = "center";
+pickerWrapper.style.cursor = "pointer";
+pickerWrapper.style.margin = "5px";
+pickerWrapper.title = "Custom color";
+
+// set rainbow background for the circle
+pickerWrapper.style.background = "conic-gradient(red, orange, yellow, green, cyan, blue, magenta, red)";
+
+// actual invisible input inside
+const picker = document.createElement("input");
+picker.type = "color";
+picker.style.width = "100%";
+picker.style.height = "100%";
+picker.style.border = "none";
+picker.style.padding = "0";
+picker.style.borderRadius = "50%";
+picker.style.cursor = "pointer";
+picker.style.opacity = "0"; // make input invisible but clickable
+
+// when color is picked, apply to all processed images
+picker.oninput = (e) => {
+  processedFiles.forEach(file => applyBackgroundColor(file, e.target.value));
+};
+
+// append picker to wrapper
+pickerWrapper.appendChild(picker);
+row.appendChild(pickerWrapper);
+
+  // --- Show Download All button ---
+  downloadAllBtn.style.display = "inline-block";
+
+  // ✅ Attach click handler to download zip
+  downloadAllBtn.onclick = () => {
+    if (!processedFiles || processedFiles.length === 0) return;
+
+    const zip = new JSZip();
+
+    processedFiles.forEach(f => {
+      const dataURL = f.canvas.toDataURL("image/png");
+      zip.file(
+        f.name.replace(/\.[^/.]+$/, '') + "_bg_removed.png",
+        dataURL.split(',')[1],
+        { base64: true }
+      );
+    });
+
+    zip.generateAsync({ type: "blob" }).then(content => {
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(content);
+      link.download = "bg_removed_images.zip";
+      link.click();
+      URL.revokeObjectURL(link.href);
+    });
+  };
+}
+
+
+function applyBackgroundColor(file, color) {
+  const { canvas, ctx, img } = file;
+
+  // Clear canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw background
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Draw foreground image (with transparency)
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+}

@@ -237,6 +237,18 @@ body {
   height: auto;                 /* allows dropZone to grow with previews */
   min-height: unset;
 }
+.color-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 0 6px rgba(0,0,0,0.3);
+}
+
+.color-circle:hover {
+  transform: scale(1.1);
+}
 
 
 
