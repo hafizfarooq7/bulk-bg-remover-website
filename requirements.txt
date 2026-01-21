@@ -1,6 +1,7 @@
-Flask==2.3.3
-torch==2.5.1
+flask
 numpy
-Pillow
+pillow
+opencv-python
+scipy
 onnxruntime
-gunicorn
+torch
