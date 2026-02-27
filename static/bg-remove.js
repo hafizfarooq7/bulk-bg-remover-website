@@ -211,15 +211,19 @@ dropZone.appendChild(box);
             downloadIcon.style.display = 'flex';
             downloadIcon.style.alignItems = 'center';
             downloadIcon.style.justifyContent = 'center';
-            downloadIcon.onclick = () => {
-              canvas.toBlob(blob => {
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = file.name.replace(/\.[^/.]+$/, '') + "_bg_removed.png";
-                a.click();
-              });
-            };
+            downloadIcon.onclick = (e) => {
+  e.stopPropagation(); // 🔹 Prevent click from reaching dropZone
+  canvas.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name.replace(/\.[^/.]+$/, '') + "_bg_removed.png";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+};
             box.appendChild(downloadIcon);
 
             processedFiles.push({
@@ -328,7 +332,25 @@ function showBackgroundColorPanel(processedFiles) {
     };
     row.appendChild(c);
   });
+// --- Transparent background circle ---
+const transparentCircle = document.createElement("div");
+transparentCircle.className = "color-circle";
 
+transparentCircle.style.background = `
+  linear-gradient(45deg,#ccc 25%,transparent 25%),
+  linear-gradient(-45deg,#ccc 25%,transparent 25%),
+  linear-gradient(45deg,transparent 75%,#ccc 75%),
+  linear-gradient(-45deg,transparent 75%,#ccc 75%)
+`;
+transparentCircle.style.backgroundSize = "10px 10px";
+transparentCircle.style.backgroundPosition = "0 0,0 5px,5px -5px,-5px 0px";
+transparentCircle.title = "Transparent";
+
+transparentCircle.onclick = () => {
+  processedFiles.forEach(file => applyBackgroundColor(file, "transparent"));
+};
+
+row.appendChild(transparentCircle);
 // --- Custom color "rainbow" picker ---
 const pickerWrapper = document.createElement("div");
 pickerWrapper.style.width = "30px";
@@ -397,13 +419,14 @@ row.appendChild(pickerWrapper);
 function applyBackgroundColor(file, color) {
   const { canvas, ctx, img } = file;
 
-  // Clear canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Draw background
+  if (color === "transparent") {
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return;
+  }
+
   ctx.fillStyle = color;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // Draw foreground image (with transparency)
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 }
