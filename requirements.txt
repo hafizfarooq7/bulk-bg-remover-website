@@ -2,7 +2,5 @@ flask
 gunicorn
 numpy
 pillow
-opencv-python
-scipy
+opencv-python-headless
 onnxruntime
-torch
